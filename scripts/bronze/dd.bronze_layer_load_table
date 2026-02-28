@@ -100,12 +100,13 @@ BEGIN
 		TRUNCATE TABLE bronze.erp_px_cat_gv2
 
 		PRINT'Inserting data into the table bronze.erp_px_cat_gv2'
-		BULK INSERT bronze.erp_loc_a101
+		BULK INSERT bronze.erp_px_cat_gv2
 		FROM 'I:\Data Power Project Data Analysis maketing\Bara Project\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\PX_CAT_G1V2.csv'
 		WITH 
 			(
 			FIRSTROW = 2,
 			FIELDTERMINATOR = ',',
+			FIELDQUOTE = '"',
 			TABLOCK
 			);
 		SET @Batch_end_time = GETDATE()
@@ -122,4 +123,7 @@ BEGIN
 	END CATCH
 END; 
 
-EXEC bronze.load_bronze
+
+
+
+
