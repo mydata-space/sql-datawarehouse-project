@@ -1,0 +1,260 @@
+/*
+==============================================================
+Test Scripts: Data Cleansing Silver Layer (Source -> Silver)
+==============================================================
+
+Script Purpose:
+	This stored procedure performs the Data Cleansing and Transformation 
+	of 'silver' schema tables from the 'bronze' schema.
+
+Actions Performed:
+	- Remove Duplicates
+	- Data Filtering
+	- Handling Missing Values
+	- Handling unwanted spaces and Invalid Values
+	- Data Type Casting and Outliers Detection
+
+Parameters:
+	None.
+	This stored procedure does not accept any parameters or return any values.
+
+Usage Example:
+	EXEC Silver.load_silver;
+==============================================================
+*/
+
+-- >> CRM Tables
+-- ==============
+--------------------------------------------------------------
+-- Test Scripts : Data Cleaning for table silver.crm_cust_info
+--------------------------------------------------------------
+
+-- Check null or duplicates in primary key
+-- Expected : No null or duplicates in the primary key
+SELECT 
+cst_id,COUNT(*) AS flag_duplicates
+FROM silver.crm_cust_info
+GROUP BY cst_id
+HAVING COUNT(*) > 1;
+
+--	Check for unwanted spaces in NVARCHAR column cst_firstname and cst_lastname
+--	Expected : no space in the column
+SELECT 
+cst_firstname,
+cst_lastname
+FROM silver.crm_cust_info
+WHERE  cst_firstname != TRIM(cst_firstname) OR cst_lastname != TRIM(cst_lastname);
+
+--	Standardize and consistency for the columns cst_marital_status and cst_gndr
+--	Expected result : No inconsistency 
+SELECT 
+DISTINCT cst_marital_status,
+CASE 
+	WHEN cst_marital_status = 'S' THEN 'Single'
+	WHEN cst_marital_status = 'M' THEN 'Married'
+	ELSE 'n/a'
+END
+FROM silver.crm_cust_info;
+
+------
+SELECT 
+DISTINCT cst_gndr,
+CASE 
+	WHEN cst_gndr = 'F' THEN 'Female'
+	WHEN cst_gndr = 'M' THEN 'Male'
+	ELSE 'n/a'
+END
+FROM silver.crm_cust_info;
+
+-------------------------------------------------------------
+-- Test Scripts : Data Cleaning for table silver.crm_prd_info
+-------------------------------------------------------------
+
+-- Check null or duplicates in primary key
+-- Expected : No null or duplicates in the primary key
+SELECT *
+FROM(
+SELECT *, 
+ROW_NUMBER() OVER(PARTITION BY prd_id ORDER BY prd_start_dt DESC) AS flag_duplicates
+FROM silver.crm_prd_info) M WHERE flag_duplicates > 1; 
+
+-- Split column to create foreign key
+-- Expected : join crm_prd_info table and erp_px_cat_gv2 table
+SELECT 
+prd_key,
+REPLACE(SUBSTRING(TRIM(prd_key),1,5),'-','_') AS prd_key,
+SUBSTRING(TRIM(prd_key),5,LEN(prd_key)) AS prd_category
+FROM silver.crm_prd_info; 
+
+--	Check for unwanted spaces in NVARCHAR column prd_nm 
+--	Expected : no space in the column
+SELECT 
+prd_nm
+FROM silver.crm_prd_info
+WHERE prd_nm != TRIM(prd_nm);
+
+-- Check for null and negative prd_cost
+-- Expected : No negative cost and null
+SELECT * 
+FROM silver.crm_prd_info
+WHERE prd_cost < 0 OR  prd_cost IS NULL;
+
+--	Standardize and consistency for the columns prd_line
+--	Expected result : No inconsistency 
+SELECT 
+DISTINCT prd_line,
+CASE 
+	WHEN prd_line = 'M' THEN 'Mountain'
+	WHEN prd_line = 'T' THEN 'Touring'
+	WHEN prd_line = 'R' THEN 'Road'
+	WHEN prd_line = 'S' THEN 'other sales'
+	ELSE 'n/a'
+END
+FROM silver.crm_prd_info;
+
+-- Check for inconsitency in date columns prd_start_dt, prd_end_dt
+SELECT *
+FROM silver.crm_prd_info
+WHERE prd_start_dt < prd_end_dt  
+/*There are inconsistencies End date is inferior to start date. we have decided 
+to use the function Lead of the start date - 1 month to fill the end date column */
+
+
+------------------------------------------------------------------
+-- Test Scripts : Data Cleaning for table silver.crm_sales_details
+------------------------------------------------------------------
+
+-- Check the existence of primairy key
+-- Expected : Not in the table silver.crm_prd_info
+SELECT *
+FROM bronze.crm_sales_details
+WHERE sls_prd_key NOT IN (SELECT prd_key FROM silver.crm_prd_info);
+
+-- Check the existence of primairy key
+-- Expected : Not in the table silver.crm_prd_info 
+SELECT *
+FROM silver.crm_sales_details
+WHERE sls_cust_id NOT IN (SELECT cst_id FROM silver.crm_cust_info);
+
+-- Check for invalid date and convert into date type the columns
+-- Expected : Int column > 0 (IF 0 THEN NULLIF) AND Int column LEN 8 digit 
+SELECT 
+sls_order_dt
+FROM silver.crm_sales_details
+WHERE sls_order_dt <= 0 OR LEN(sls_order_dt) != 8
+
+-- Check the date quality : 
+-- Expected :  sls_ship_dt > sls_order_dt
+SELECT 
+*
+FROM silver.crm_sales_details
+WHERE sls_ship_dt < sls_order_dt
+
+-- Check data quality for measure sls_sales, sls_quantity, sls_price
+-- Expected : Not negative. sales = quantity * price
+
+SELECT 
+*
+FROM silver.crm_sales_details
+WHERE sls_sales < 0  OR sls_sales IS NULL OR sls_sales != sls_quantity * sls_price
+
+SELECT *
+FROM silver.crm_sales_details; 
+
+--
+SELECT *
+FROM silver.crm_sales_details 
+WHERE sls_quantity < 0 OR  sls_quantity IS NULL; 
+
+--
+SELECT *
+FROM silver.crm_sales_details 
+WHERE sls_price < 0 OR  sls_price IS NULL; 
+ 
+-- >> ERP Tables
+-- ==============
+--------------------------------------------------------------
+-- Test Scripts : Data Cleaning for table silver.erp_cust_az12
+--------------------------------------------------------------
+
+-- Check the existence of primairy key
+-- Expected : Not in the table silver.crm_prd_info
+SELECT * FROM silver.erp_cust_az12 WHERE 
+CASE 
+	WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid, 4, LEN(cid))
+	ELSE cid 
+END NOT IN (SELECT cst_key FROM silver.crm_cust_info)
+
+-- Check for invalid date and convert into date type the columns bdate
+-- Expected : bdate < GETDATE() AND Int column LEN 10 digit 
+SELECT 
+bdate
+FROM silver.erp_cust_az12
+WHERE  bdate > GETDATE() OR bdate IS NULL OR LEN(bdate) != 10 
+
+--	Standardize and consistency for the columns prd_line
+--	Expected result : No inconsistency 
+SELECT 
+DISTINCT gen,
+CASE 
+	WHEN TRIM(gen) = 'F' THEN 'Female'
+	WHEN TRIM(gen) = 'M' THEN 'Male'
+	WHEN TRIM(gen) = 'Female' THEN 'Female'
+	WHEN TRIM(gen) = 'Male' THEN 'Male'
+	ELSE NULL
+END gen
+FROM silver.erp_cust_az12
+ORDER BY gen; 
+
+
+-------------------------------------------------------------
+-- Test Scripts : Data Cleaning for table silver.erp_loc_a101
+-------------------------------------------------------------
+
+-- Check the existence of primairy key
+-- Expected : Not in the table silver.crm_prd_info
+SELECT 
+cid,
+LEN(REPLACE(cid, '-', '' ))
+FROM silver.erp_loc_a101;
+
+--	Standardize and consistency for the columns prd_line
+--	Expected result : No inconsistency 
+SELECT 
+DISTINCT cntry
+FROM silver.erp_loc_a101;
+
+
+---------------------------------------------------------------
+-- Test Scripts : Data Cleaning for table silver.erp_px_cat_gv2
+---------------------------------------------------------------
+
+-- Check the existence of primairy key
+-- Expected : Not in the table silver.crm_prd_info
+SELECT * FROM silver.erp_px_cat_gv2 WHERE id NOT IN 
+(SELECT cat_id FROM silver.crm_prd_info);
+
+--	Standardize and consistency for the columns prd_line
+--	Expected result : No inconsistency 
+SELECT 
+*
+FROM silver.erp_px_cat_gv2
+WHERE 
+cat != TRIM(cat) OR subcat != TRIM(subcat) OR maintenance != TRIM(maintenance);
+
+--
+SELECT 
+DISTINCT cat
+FROM silver.erp_px_cat_gv2;
+
+--
+SELECT 
+DISTINCT subcat
+FROM silver.erp_px_cat_gv2
+
+--
+SELECT 
+DISTINCT maintenance
+FROM silver.erp_px_cat_gv2
+ 
+
