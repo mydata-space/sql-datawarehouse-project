@@ -1,33 +1,27 @@
 /*
 ==============================================================
-Test Scripts: Data Cleansing Silver Layer (Source -> Silver)
+Test : Quality Check
 ==============================================================
-
 Script Purpose:
-	This stored procedure performs the Data Cleansing and Transformation 
-	of 'silver' schema tables from the 'bronze' schema.
+	This script performs various quality checks for data consistency, accuracy,
+	and standardization across the 'silver' schemas. It includes checks for:
+	- Null or duplicate primary keys.
+	- Unwanted spaces in string fields.
+	- Data standardization and consistency.
+	- Invalid date ranges and orders.
+	- Data consistency between related fields.
 
-Actions Performed:
-	- Remove Duplicates
-	- Data Filtering
-	- Handling Missing Values
-	- Handling unwanted spaces and Invalid Values
-	- Data Type Casting and Outliers Detection
-
-Parameters:
-	None.
-	This stored procedure does not accept any parameters or return any values.
-
-Usage Example:
-	EXEC Silver.load_silver;
+Usage Notes:
+	- Run these checks after data loading Silver Layer.
+	- Investigate and resolve any discrepancies found during the checks.
 ==============================================================
 */
 
--- >> CRM Tables
+-- >>  CRM Tables
 -- ==============
---------------------------------------------------------------
--- Test Scripts : Data Cleaning for table silver.crm_cust_info
---------------------------------------------------------------
+------------------------------------------------
+-- ETL >> table silver.crm_cust_info
+------------------------------------------------
 
 -- Check null or duplicates in primary key
 -- Expected : No null or duplicates in the primary key
@@ -66,9 +60,9 @@ CASE
 END
 FROM silver.crm_cust_info;
 
--------------------------------------------------------------
--- Test Scripts : Data Cleaning for table silver.crm_prd_info
--------------------------------------------------------------
+----------------------------------------------
+-- ETL >> table silver.crm_prd_info
+----------------------------------------------
 
 -- Check null or duplicates in primary key
 -- Expected : No null or duplicates in the primary key
@@ -119,10 +113,9 @@ WHERE prd_start_dt < prd_end_dt
 /*There are inconsistencies End date is inferior to start date. we have decided 
 to use the function Lead of the start date - 1 month to fill the end date column */
 
-
-------------------------------------------------------------------
--- Test Scripts : Data Cleaning for table silver.crm_sales_details
-------------------------------------------------------------------
+----------------------------------------
+-- ETL >> table silver.crm_sales_details
+----------------------------------------
 
 -- Check the existence of primairy key
 -- Expected : Not in the table silver.crm_prd_info
@@ -171,12 +164,11 @@ SELECT *
 FROM silver.crm_sales_details 
 WHERE sls_price < 0 OR  sls_price IS NULL; 
  
--- >> ERP Tables
--- ==============
+-- ERP >> Tables
+-- =============
 --------------------------------------------------------------
--- Test Scripts : Data Cleaning for table silver.erp_cust_az12
+-- ETL >> table silver.erp_cust_az12
 --------------------------------------------------------------
-
 -- Check the existence of primairy key
 -- Expected : Not in the table silver.crm_prd_info
 SELECT * FROM silver.erp_cust_az12 WHERE 
@@ -206,11 +198,9 @@ END gen
 FROM silver.erp_cust_az12
 ORDER BY gen; 
 
-
 -------------------------------------------------------------
--- Test Scripts : Data Cleaning for table silver.erp_loc_a101
+-- ETL >> table silver.erp_loc_a101
 -------------------------------------------------------------
-
 -- Check the existence of primairy key
 -- Expected : Not in the table silver.crm_prd_info
 SELECT 
@@ -224,11 +214,9 @@ SELECT
 DISTINCT cntry
 FROM silver.erp_loc_a101;
 
-
 ---------------------------------------------------------------
--- Test Scripts : Data Cleaning for table silver.erp_px_cat_gv2
+-- ETL >> table silver.erp_px_cat_gv2
 ---------------------------------------------------------------
-
 -- Check the existence of primairy key
 -- Expected : Not in the table silver.crm_prd_info
 SELECT * FROM silver.erp_px_cat_gv2 WHERE id NOT IN 
