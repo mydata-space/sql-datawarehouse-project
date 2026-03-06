@@ -182,7 +182,7 @@ BEGIN
 				cntry
 				)
 			SELECT 
-			LEN(REPLACE(cid, '-', '' )) AS cid,
+			REPLACE(cid, '-', '' ) AS cid,
 			CASE 
 				WHEN TRIM(cntry) = 'DE' THEN 'Germany'
 				WHEN TRIM(cntry) IN ('USA', 'US') THEN 'United States'
@@ -221,3 +221,5 @@ BEGIN
 			PRINT'-------------------------------------------------';
 		END CATCH 
 END; 
+
+
