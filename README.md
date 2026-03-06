@@ -35,6 +35,6 @@ Hi there! I'm Christ GHABAKO, I'm a junior analyst and, an MBA in businesss inte
 My mission is to help businesses to process, analyze and consume data efficiently and effectively.  
 
 Connect with me on the following platforms:
-✳️ Wechat   : +86 132 8551 9152
-✳️ Whatssap : +86 132 8551 9152 
+- ✳️ Wechat   : +86 132 8551 9152
+- ✳️ Whatssap : +86 132 8551 9152 
 
