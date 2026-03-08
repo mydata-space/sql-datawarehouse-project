@@ -34,6 +34,6 @@ Specifications
 Hi there! I'm Christ GHABAKO, I'm a junior analyst and, an MBA in businesss intelligence and entrpise system.
 My mission is to help businesses to process, analyze and consume data efficiently and effectively. 
  
-*A credit to Baraa for the inspiration in this work.* 
+*A credit to Baraa Salkini for the inspiration in this work.* 
 
 
