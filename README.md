@@ -31,9 +31,8 @@ Specifications
 
 ## ✨ About Me 
 
-Hi there! I'm Christ GHABAKO, I'm a junior analyst and, an MBA in businesss intelligence and information systems.
+Hi there! I'm Christ GHABAKO, I'm a business analyst and MBA.
 My responsability is to help businesses to process, analyze and consume data efficiently and effectively. 
  
 *A credit to Baraa Salkini for the inspiration in this work.* 
-
 
