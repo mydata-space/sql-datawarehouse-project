@@ -33,6 +33,7 @@ Specifications
 
 Hi there! I'm Christ GHABAKO, I'm an MBA of business analytics and entreprise information systems.
 My responsability is to help businesses to process, analyze and consume data efficiently and effectively. 
- 
+Furthermore, I am SAP Finance and Controlling consultant. 
+
 *A credit to Baraa Salkini for the inspiration in this work.* 
 
